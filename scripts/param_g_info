@@ -1,0 +1,8 @@
+#Interatomic length between atoms, set to 1.4 Angstroms for graphene
+#Length of sheet in the x direction (Angstroms) ,lx
+#Length of sheet in the y direction (Angstroms) ,ly
+#Radius of curvature of the fold (Angstroms) ,r1
+#Length of sheet on top half of folded sheet (Angstroms) ,r2
+#Twist angle (Degrees), theta
+#Switch for periodic sheets in the y-direction, 0 for non-periodic and 1 for periodic. For theta other than 0 and 30, the sheet gets minor alterations to the width and angle to make sheet periodic.
+#Additional parameters to be added.
