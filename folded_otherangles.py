@@ -3,8 +3,8 @@
 import math
 import numpy as np
 from folded_general import theta
-from folded_general import nx
-from folded_general import ny
+from folded_general import lx
+from folded_general import ly
 from folded_general import a
 from folded_general import r1
 from folded_general import r2
@@ -17,6 +17,9 @@ import math
 
 theta = theta*math.pi/180;
 pi = math.pi
+
+nx = round(lx/(3*a));
+ny = round(ly/(math.sqrt(3)*a));
 
 # Size of the unit cell
 A = 3*a;
