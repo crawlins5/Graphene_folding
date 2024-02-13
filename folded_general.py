@@ -1,7 +1,4 @@
 #Python version
-# Matlab script to create a lammps data file of a graphene sheet.
-#This file same as straight-lines set-up, but for arbitrary angles of
-#rotation for graphene
 #Calls relevant folding scripts for 0, 30 and arbitrary angles
 # INPUT PARAMETERS:
 fileID = open("param_g",'r');
@@ -10,9 +7,9 @@ a = float(param[0])# interatomic distance
 if (a <= 0):
 	print("Interatomic distance between carbon atoms must be greater than zero")
 	exit()
-nx = int(param[1]) ;    # number of repetitions in the x direction
-ny = int(param[2]);     # number of repetitions in the y direction
-if (nx <= 0 and ny <= 0):
+lx = float(param[1]) ;    # Length of sheet in the x direction
+ny = float(param[2]);     # Length of sheet in the y direction
+if (lx <= 0 and ly <= 0):
 	print("dimensions of grid need to be positive")
 	exit()
 r1 = float(param[3]); #inner radius
