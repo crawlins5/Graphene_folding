@@ -95,11 +95,9 @@ if (periodic == 1):
 #increase number of atoms to account for rotation
 #dy = nx*A*math.sin(theta)
 #dx = math.sqrt((nx*A)**2+(ny*B)**2)*math.sin(theta+math.atan(nx*A/(ny*B)))
-lxi = nx*A
-lyi = ny*B/math.cos(theta)
 
-lxf = lxi/math.cos(theta) + math.sin(theta)*lyi
-lyf = lyi + lxi*math.tan(theta)
+lxf = lx/math.cos(theta) + math.sin(theta)*ly
+lyf = ly + lx*math.tan(theta)
 
 nx2 = math.ceil(lxf/A)
 ny2 = math.ceil(lyf/B)
@@ -126,7 +124,7 @@ new_coords = np.zeros((N,3))
 Ncount = 0 #counter for atoms
 for i in range(N):
 	#print(rot_coords[i,0], rot_coords[i,1])
-	if ((rot_coords[i,0] >= 0.0) and (rot_coords[i,0] < lxi) and (rot_coords[i,1] >= 0.0) and (rot_coords[i,1] < lyi)):
+	if ((rot_coords[i,0] >= 0.0) and (rot_coords[i,0] < lx) and (rot_coords[i,1] >= 0.0) and (rot_coords[i,1] < ly)):
 		#print("yes")
 		new_coords[Ncount,:] = rot_coords[i,:]
 		Ncount += 1
@@ -259,11 +257,11 @@ if writeresults:
 		fid.write('1 atom types\n\n' % ())
 	else:
 		fid.write('2 atom types\n\n' % ()) #Adding in fixed graphene atoms
-	fid.write('%g %g xlo xhi\n' % (0.0, 1.1*lxi))
+	fid.write('%g %g xlo xhi\n' % (0.0, 1.1*lx))
 	if (periodic == 0):
-		fid.write('%g %g ylo yhi\n' % (-10.0, 1.2*lyi))
+		fid.write('%g %g ylo yhi\n' % (-10.0, 1.2*ly))
 	else:
-		fid.write('%g %g ylo yhi\n' % (0.0, lyi))
+		fid.write('%g %g ylo yhi\n' % (0.0, ly))
 	fid.write('%g %g zlo zhi\n\n' % (-2*r1, 4*r1))
 	fid.write('Masses\n\n' % ())
 	if (yextra == 0):
