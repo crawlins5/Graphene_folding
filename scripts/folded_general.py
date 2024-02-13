@@ -8,7 +8,7 @@ if (a <= 0):
 	print("Interatomic distance between carbon atoms must be greater than zero")
 	exit()
 lx = float(param[1]) ;    # Length of sheet in the x direction
-ny = float(param[2]);     # Length of sheet in the y direction
+ly = float(param[2]);     # Length of sheet in the y direction
 if (lx <= 0 and ly <= 0):
 	print("dimensions of grid need to be positive")
 	exit()
