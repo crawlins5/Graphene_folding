@@ -1,11 +1,10 @@
 #Called by scrolled_graphene_general for theta = 0 or 30
 #Updated to remove edge atoms with only a single carbon nearby. 
-#Will be ignored in later forms, but should make early simulations more smooth
 import math
 import numpy as np
 from folded_general import theta
-from folded_general import nx
-from folded_general import ny
+from folded_general import lx
+from folded_general import ly
 from folded_general import a
 from folded_general import r1
 from folded_general import r2
@@ -16,6 +15,11 @@ from folded_general import periodic
 
 import math
 pi = math.pi
+
+nx = round(lx/(3*a));
+ny = round(ly/(math.sqrt(3)*a));
+#Converts dimensions of the sheet to number of unit cells in each direction
+
 if (theta == 0):
     zigzagedge = True;
 else:
