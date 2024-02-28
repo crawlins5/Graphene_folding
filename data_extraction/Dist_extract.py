@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-#November 2023: Adding fold angle derived from velocity differences
-# Changing velocity calculations. Previous idea was based on velocity difference between edges of sheet.
-# New idea is to measure velocity difference between edge and closest atoms in other fold
-
-# In[1]:
+#Extracts distance and velocity information from LAMMPS output files
 
 
 import math
@@ -19,7 +15,7 @@ for j in input:
 	if (input[0].startswith('timestep')):
 		timestep = float(input[1]) #fs
 		timestep = timestep/1000 #ps
-
+#Extracts timestep and converts to ps
 
 
 contents = []
@@ -29,7 +25,7 @@ line_start = 1
 line_num = 0
 pi = math.pi
 bond_length = 1.4
-num_atoms = contents[3]
+num_atoms = contents[3] #Total number of atoms
 total_steps = contents.count(num_atoms)
 
 num_atoms = int(num_atoms)
@@ -92,7 +88,6 @@ print(len(zmax_index), len(zmin_index))
 S = np.zeros(num_atoms)
 
 
-
 for atom in range(num_atoms-1, -1,-1):
 	#print(atom)
 	if (atom in zmin_index_big):
@@ -139,22 +134,16 @@ Sm = np.amax(S)
 
 
 filename_dist = 'Distance.dat'
-filename_vel = 'velocity2.dat'
-filename_angle = 'angle.dat'
+filename_vel = 'velocity.dat'
 fid_dist = open(filename_dist, 'w')
 fid_vel = open(filename_vel, 'w')
-fid_ang = open(filename_angle, 'w')
 
-#fid_dist.write("#Time(ps) \t spacing 3SD \t spacing 2SD \t spacing 1SD \t SD \t  overhang 3SD \t overhang 2SD \t overhang 1SD \t SD\n")
 fid_dist.write("#Time(ps) \t layer spacing \t overhang \n ")
-
 fid_vel.write("#Time(ps) \t vx(A/ps) \t vy(A/ps) \t vz(A/ps) \t v(A/ps) \n")
-fid_ang.write("#Time(ps) \t phi \t v*cos(phi)\n")
+
 Sarray = np.zeros(max(len(zmax_index), len(zmin_index)))
 rarray = np.zeros(max(len(zmax_index), len(zmin_index)))
-#vxarray = np.zeros(max(len(zmax_index), len(zmin_index)))
-#vyarray = np.zeros(max(len(zmax_index), len(zmin_index)))
-#vzarray = np.zeros(max(len(zmax_index), len(zmin_index)))
+
 vxtarray = np.zeros(max(len(zmax_index), len(zmin_index)))
 vytarray = np.zeros(max(len(zmax_index), len(zmin_index)))
 vztarray = np.zeros(max(len(zmax_index), len(zmin_index)))
@@ -207,19 +196,10 @@ for i, dt in enumerate(t):
 			#print(dS2min,r2min, r2min_index)
 			rmin = math.sqrt(r2min)
 			dSmin = Sm - S[r2min_index] - S[atom]
-			#print(i, S[r2min_index], Sm, S[atom],dSmin)
-			#print(rmin,dSmin)
-			#dx_sum += x[i,atom] - x[i,r2min_index]
-			#dy_sum += y[i,atom] - y[i,r2min_index]
-			#dz_sum += z[i,atom] - z[i,r2min_index]
-			#S_sum += dSmin
-			#r_sum += rmin
-			#print(r2min,dSmin, jj, r2min_index)
+			
 			Sarray[jj] = dSmin
 			rarray[jj] = rmin
-			#vxarray[jj] = vx[i,r2min_index] - vx[i,atom]
-			#vyarray[jj] = vy[i,r2min_index] - vy[i,atom]
-			#vzarray[jj] = vz[i,r2min_index] - vz[i,atom]
+			
 			vxtarray[jj] = vx[i,atom]
 			vxbarray[jj] = vx[i,r2min_index]
 			vytarray[jj] = vy[i,atom]
@@ -249,18 +229,12 @@ for i, dt in enumerate(t):
 			#print(dS2min,r2min, r2min_index)
 			rmin = math.sqrt(r2min)
 			dSmin = -(S[r2min_index][0] - Sm + S[atom])
-			#print(i,S[r2min_index], Sm, S[atom],dSmin)
-			#print(rmin,dSmin)
-			#dx_sum += x[i,atom] - x[i,r2min_index]
-			#dy_sum += y[i,atom] - y[i,r2min_index]
-			#dz_sum += z[i,atom] - z[i,r2min_index]
+			
 			#S_sum += dSmin
 			#r_sum += rmin
 			Sarray[jj] = dSmin
 			rarray[jj] = rmin
-			#vxarray[jj] = vx[i,atom] - vx[i,r2min_index]
-			#vyarray[jj] = vy[i,atom] - vy[i,r2min_index]
-			#vzarray[jj] = vz[i,atom] - vz[i,r2min_index]
+			
 			vxbarray[jj] = vx[i,atom]
 			vxtarray[jj] = vx[i,r2min_index]
 			vybarray[jj] = vy[i,atom]
@@ -284,22 +258,6 @@ for i, dt in enumerate(t):
 	r_2SD_ave = np.mean(r_2SD)
 	#r_1SD_ave = np.mean(r_1SD)
 		
-	#Without first set of outliers (2SD)
-	#r_2SD_ave = np.mean(r_2SD)
-	#r_SD = np.std(r_2SD)
-	#r_dist_from_mean = abs(r_2SD - r_2SD_ave)
-	#r_2SD_inc = r_dist_from_mean < 2*r_SD
-	#r1_2SD = r_2SD[r_2SD_inc]
-	#r1_ave = np.mean(r1_2SD)
-
-	#Without second set of outliers (2SD)
-	#r_2SD_ave = np.mean(r1_2SD)
-	#r_SD = np.std(r1_2SD)
-	#r_dist_from_mean = abs(r1_2SD - r_2SD_ave)
-	#r_2SD_inc = r_dist_from_mean < 2*r_SD
-	#r2_2SD = r1_2SD[r_2SD_inc]
-	#r2_ave = np.mean(r2_2SD)
-
 
 	s_ave1 = np.mean(Sarray)
 	s_SD = np.std(Sarray)
@@ -315,23 +273,6 @@ for i, dt in enumerate(t):
 	#s_3SD_ave = np.mean(s_3SD)
 	s_2SD_ave = np.mean(s_2SD)
 	#s_1SD_ave = np.mean(s_1SD)
-
-	#Without first set of outliers (2SD)
-	#s_2SD_ave = np.mean(s_2SD)
-	#s_SD = np.std(s_2SD)
-	#s_dist_from_mean = abs(s_2SD - s_2SD_ave)
-	#s_2SD_inc = s_dist_from_mean < 2*s_SD
-	#s1_2SD = s_2SD[s_2SD_inc]
-	#s1_ave = np.mean(s1_2SD)
-
-	#Without second set of outliers (2SD)
-	#s_2SD_ave = np.mean(s1_2SD)
-	#s_SD = np.std(s1_2SD)
-	#s_dist_from_mean = abs(s1_2SD - s_2SD_ave)
-	#s_2SD_inc = s_dist_from_mean < 2*s_SD
-	#s2_2SD = s1_2SD[s_2SD_inc]
-	#s2_ave = np.mean(s2_2SD)
-
 
 
 	#Velocity check
@@ -361,68 +302,6 @@ for i, dt in enumerate(t):
 
 	vmag = math.sqrt(vx_ave**2 + vy_ave**2 +vz_ave**2)
 
-
-	#vxt_array = vx[i,zmax_index]
-	#vxt_ave = np.mean(vxt_array)
-	#vxt_SD = np.std(vxt_array)
-	#vxt_dfm = abs(vxt_array - vxt_ave)
-	#vxt_2SD_inc = vxt_dfm < 2*vxt_SD
-	#vxt_2SD = vxt_array[vxt_2SD_inc]
-	#vx_top = np.mean(vxt_2SD)
-
-	#vyt_array = vy[i,zmax_index]
-	#vyt_ave = np.mean(vyt_array)
-	#vyt_SD = np.std(vyt_array)
-	#vyt_dfm = abs(vyt_array - vyt_ave)
-	#vyt_2SD_inc = vyt_dfm < 2*vyt_SD
-	#vyt_2SD = vyt_array[vyt_2SD_inc]
-	#vy_top = np.mean(vyt_2SD)
-
-	#vzt_array = vz[i,zmax_index]
-	#vzt_ave = np.mean(vzt_array)
-	#vzt_SD = np.std(vzt_array)
-	#vzt_dfm = abs(vzt_array - vzt_ave)
-	#vzt_2SD_inc = vzt_dfm < 2*vzt_SD
-	#vzt_2SD = vzt_array[vzt_2SD_inc]
-	#vz_top = np.mean(vzt_2SD)
-
-	#vxb_array = vx[i,zmin_index]
-	#vxb_ave = np.mean(vxb_array)
-	#vxb_SD = np.std(vxb_array)
-	#vxb_dfm = abs(vxb_array - vxb_ave)
-	#vxb_2SD_inc = vxb_dfm < 2*vxb_SD
-	#vxb_2SD = vxb_array[vxb_2SD_inc]
-	#vx_bottom = np.mean(vxb_2SD)
-
-	#vyb_array = vy[i,zmin_index]
-	#vyb_ave = np.mean(vyb_array)
-	#vyb_SD = np.std(vyb_array)
-	#vyb_dfm = abs(vyb_array - vyb_ave)
-	#vyb_2SD_inc = vyb_dfm < 2*vyb_SD
-	#vyb_2SD = vyb_array[vyb_2SD_inc]
-	#vy_bottom = np.mean(vyb_2SD)
-
-	#vzb_array = vz[i,zmin_index]
-	#vzb_ave = np.mean(vzb_array)
-	#vzb_SD = np.std(vzb_array)
-	#vzb_dfm = abs(vzb_array - vzb_ave)
-	#vzb_2SD_inc = vzb_dfm < 2*vzb_SD
-	#vzb_2SD = vzb_array[vzb_2SD_inc]
-	#vz_bottom = np.mean(vzb_2SD)
-
-
-	#vx_top = np.mean(vx[i,zmax_index])
-	#vy_top = np.mean(vy[i,zmax_index])
-	#vz_top = np.mean(vz[i,zmax_index])
-
-	#vx_bottom = np.mean(vx[i,zmin_index])
-	#vy_bottom = np.mean(vy[i,zmin_index])
-	#vz_bottom = np.mean(vz[i,zmin_index])
-    	
-
-	#vx_ave = vx_top - vx_bottom
-	#vy_ave = vy_top - vy_bottom
-	#vz_ave = vz_top - vz_bottom
 	vx_top = np.mean(vxtarray)
 	vx_bottom = np.mean(vxbarray)
 	vy_top = np.mean(vytarray)
@@ -430,27 +309,10 @@ for i, dt in enumerate(t):
 	vz_top = np.mean(vztarray)
 	vz_bottom = np.mean(vzbarray)
 
-	vdot = vx_top*vx_bottom + vy_top*vy_bottom + vz_top*vz_bottom
-	vtmag = math.sqrt(vx_top**2 + vy_top**2 +vz_top**2)
-	vbmag = math.sqrt(vx_bottom**2 + vy_bottom**2 +vz_bottom**2)
-
-	ang = math.acos(-vdot/(vtmag*vbmag))
-#	if ( (i % 100)== 0):
-#		print(vdot, vmag, ang)
-
 	vabs = abs(vx_ave)/vx_ave*vmag
-#	print(vx_ave, vy_ave, vz_ave, vabs)
-	#fid_dist.write("%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g\n"%(dt*timestep,r_3SD_ave, r_2SD_ave, r_1SD_ave, r_SD, s_3SD_ave, s_2SD_ave, s_1SD_ave, s_SD ))
-	#fid_dist.write("%g \t %g \t %g \t %g \t %g \t %g \t %g \n"%(dt*timestep,r_ave1, r_2SD_ave, r1_ave, s_ave1, s_2SD_ave, s1_ave))
+
 	fid_dist.write("%g \t %g \t %g\n"%(dt*timestep, r_2SD_ave, s_2SD_ave))
 	fid_vel.write("%g \t %g \t %g \t %g \t %g \n"% (dt*timestep, vx_ave*1000,vy_ave*1000,vz_ave*1000,vabs*1000))
-	fid_ang.write("%g \t %g \t %g \n" % (dt*timestep,ang, 1000*vabs*math.cos(ang)))
+	
 fid_dist.close()
 fid_vel.close()
-fid_ang.close()
-
-
-
-
-
-
