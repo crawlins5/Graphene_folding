@@ -8,18 +8,26 @@ from folded_general import ly
 from folded_general import a
 from folded_general import r1
 from folded_general import r2
-from folded_general import yextra
 from folded_general import filename
 from folded_general import writeresults
 from folded_general import periodic
+#Feb 27 Added substrate dimensions
+from folded_general import s_lx
+from folded_general import s_ly
+from folded_general import s_lz
+from folded_general import y_extra
+from folded_general import h2o
 
 import math
 
 theta = theta*math.pi/180;
 pi = math.pi
+ly_full = ly + 2.0*y_extra
 
 nx = round(lx/(3*a));
-ny = round(ly/(math.sqrt(3)*a));
+ny = round(ly_full/(math.sqrt(3)*a));
+ny_fold = round(ly/(math.sqrt(3)*a))
+ny_extra = math.floor((ny - ny_fold)/2)
 
 # Size of the unit cell
 A = 3*a;
@@ -96,8 +104,8 @@ if (periodic == 1):
 #dy = nx*A*math.sin(theta)
 #dx = math.sqrt((nx*A)**2+(ny*B)**2)*math.sin(theta+math.atan(nx*A/(ny*B)))
 
-lxf = lx/math.cos(theta) + math.sin(theta)*ly
-lyf = ly + lx*math.tan(theta)
+lxf = lx/math.cos(theta) + math.sin(theta)*ly_full
+lyf = ly_full + lx*math.tan(theta)
 
 nx2 = math.ceil(lxf/A)
 ny2 = math.ceil(lyf/B)
@@ -124,7 +132,7 @@ new_coords = np.zeros((N,3))
 Ncount = 0 #counter for atoms
 for i in range(N):
 	#print(rot_coords[i,0], rot_coords[i,1])
-	if ((rot_coords[i,0] >= 0.0) and (rot_coords[i,0] < lx) and (rot_coords[i,1] >= 0.0) and (rot_coords[i,1] < ly)):
+	if ((rot_coords[i,0] >= 0.0) and (rot_coords[i,0] < lx) and (rot_coords[i,1] >= 0.0) and (rot_coords[i,1] < ly_full)):
 		#print("yes")
 		new_coords[Ncount,:] = rot_coords[i,:]
 		Ncount += 1
@@ -208,12 +216,13 @@ L = r2 +pi*r1
 spiral_coords = np.zeros((N,3));
 
 for i in range(0,N):
-	if (rot_coords[i,0] < r2): #atom is in the top layer
-		spiral_coords[i,0] = r2 + L - rot_coords[i,0]
-		spiral_coords[i,2] = 2.0*r1
-	elif (rot_coords[i,0] > L): #atom is on the bottom layer
+	if ((rot_coords[i,0] >= L) or (rot_coords[i,1] < y_extra) or (rot_coords[i,1] > (y_extra+ly))): #atom is on the bottom layer or part of the y_extra unfolded segments for tearing
 		spiral_coords[i,0] = rot_coords[i,0]
 		spiral_coords[i,2] = rot_coords[i,2]
+	elif (rot_coords[i,0] < r2): #atom is in the top layer
+		spiral_coords[i,0] = r2 + L - rot_coords[i,0]
+		spiral_coords[i,2] = 2.0*r1
+
 	else:
 		dx = abs(rot_coords[i,0]-rot_coords[i-1,0])
 		if (rot_coords[i-1,0] < r2):
@@ -241,39 +250,150 @@ for i in range(0,N):
 		spiral_coords[i,2] = r1*math.sin(phi+pi/2.0) + r1
 
 spiral_coords[:,1] = rot_coords[:,1]
+CNoffset = 0
+if (y_extra != 0): # remove edge atoms at tears
+	tmp_coords = spiral_coords
+	for atom in range(N):
+		if ( (abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
+			radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
+			CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+			CN = len(CN_atoms)
+			if (CN < 3): #Has a co-ordination number less than 2
+				print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
+				tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
+				CNoffset += 1
+				#remove atom
+
+	if (CNoffset > 0):
+		spiral_coords = tmp_coords
+	print(CNoffset,'atoms removed')
+
+N=N-CNoffset
 
 
-print(N)
-for j in range(N):
-	if (((rot_coords[j,1] < (B*yextra)) or (rot_coords[j,1] > (B*(ny2-yextra))))):
-		spiral_coords[j,0] = rot_coords[j,0]
-		spiral_coords[j,2] = rot_coords[j,2]
+
+
+
+
+#Substrate info----------------------------------------------------------------------------------------------------------------------
+#Lattice parameter of Si cell
+l = 5.43 
+#Interatomic distance
+a_Si = l*math.sqrt(3)/4
+#Spacing between Si and C
+CSi = 2.0 #Approximately the graphene interlayer spacing
+x_offset = -10
+
+mx = round(s_lx/l);
+my = round(s_ly/l);
+mz = round(s_lz/l);
+#Converts dimensions of the sheet to number of unit cells in each direction
+print("Old Si dimensions x=",s_lx," y=",s_ly,"z=",s_lz)
+s_lx = l*mx
+s_ly = l*my
+s_lz = l*mz
+#Calculates real box size
+print("New Si dimensions x=",s_lx," y=",s_ly,"z=",s_lz)
+
+
+# Coordinates of the 8 atoms in the unit cell
+s_base = np.array([[0.0, 0.0, 0.0], [l/2, l/2, 0.0], [0, l/2, l/2], [l/2,0,l/2], [a_Si/math.sqrt(3), a_Si/math.sqrt(3), a_Si/math.sqrt(3)], [l-a_Si/math.sqrt(3), l-a_Si/math.sqrt(3), a_Si/math.sqrt(3)], [a_Si/math.sqrt(3), l-a_Si/math.sqrt(3), l-a_Si/math.sqrt(3)],[l-a_Si/math.sqrt(3), a_Si/math.sqrt(3), l-a_Si/math.sqrt(3)]])
+
+# Total number of Si atoms
+Ns = max(s_base.shape)*mx*my*mz;
+if (mz==0):
+	Ns1 = 0
+else:
+	Ns1 = max(s_base.shape)*mx*my
+
+#Number of Si atoms in a single layer
+# Calculate the coordinates of the atoms in the layer
+if (Ns !=0):
+	s_coords = np.zeros((Ns,3));
+	id = -1;
+	for iz in range(0,mz):
+		for iy in range(0,my):
+			for ix in range(0,mx):
+				for iatom in range(0,max(s_base.shape)):
+					id = id + 1;
+					s_coords[id,:] = s_base[iatom,:]+[ix*l,iy*l,iz*l];
+	#Shift substrate to be in-line with graphene
+	s_coords[:,0] = s_coords[:,0] +x_offset
+	s_coords[:,1] = s_coords[:,1] +(ly_full-s_ly)/2
+	s_coords[:,2] = s_coords[:,2] -(s_lz+CSi)
+
+#End Substrate info ------------------------------------------------------------------------------------------------------------------------
+
+#Box dimensions
+scale = 1.1
+if (periodic == 1):
+	scale=1.0
+
+if ((s_lx > lx) and (Ns !=0)):
+	length = s_lx*1.1
+else:
+	length = 1.1*lx
+if ((s_ly > ly) and (Ns !=0)):
+	width0 = (ly_full-s_ly*scale)/2
+	width = (ly_full+s_ly*scale)/2
+else:
+	width0 = -100.0(scale-1.0)
+	width = ly_full*scale
+
 
 if writeresults:
 	fid = open(filename,'w')
-	fid.write('graphene a=%g, theta=%g ,ny=%g\n' % (a,theta*180/math.pi,ny))
-	fid.write('%g atoms\n\n' % (N))
-	if (yextra == 0):
-		fid.write('1 atom types\n\n' % ())
-	else:
-		fid.write('2 atom types\n\n' % ()) #Adding in fixed graphene atoms
-	fid.write('%g %g xlo xhi\n' % (0.0, 1.1*lx))
-	if (periodic == 0):
-		fid.write('%g %g ylo yhi\n' % (-10.0, 1.2*ly))
-	else:
-		fid.write('%g %g ylo yhi\n' % (0.0, ly))
-	fid.write('%g %g zlo zhi\n\n' % (-2*r1, 4*r1))
-	fid.write('Masses\n\n' % ())
-	if (yextra == 0):
-		fid.write('1 12.0107\n\n' % ())#free carbon atoms
-	else:
-		fid.write('2 12.0107\n\n' % ())#fixed carbon atoms 
-	fid.write('Atoms\n\n' % ())
-	for i in range(0,N): 
-		if (rot_coords[i,0] < L and ((rot_coords[i,1] < (B*yextra)) or (rot_coords[i,1] > (B*(ny2-yextra))))):
-			fid.write('%g 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+	fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
+	fid.write('%d atoms\n\n' % (N+Ns))
+	if (Ns==0):
+		if (y_extra == 0):
+			fid.write('1 atom types\n\n' % ())
 		else:
-			fid.write('%g 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+			fid.write('2 atom types\n\n' % ()) #Fixed atoms for tearing
+	else:
+		if (y_extra == 0):
+			fid.write('3 atom types\n\n' % ()) #Just adding substrate atoms in
+		else:
+			fid.write('4 atom types\n\n' % ())
+
+	fid.write('%g %g xlo xhi\n' % (x_offset, length))
+	if (periodic == 0):
+		fid.write('%g %g ylo yhi\n' % (width0, width))
+	else:
+		fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
+	fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
+	fid.write('Masses\n\n' % ())
+	fid.write('1 12.0107\n' % ())#free carbon atoms
+	if (y_extra > 0):
+		fid.write('2 12.0107\n' % ()) #fixed carbon atoms
+		if (Ns >0):
+			Si_free = 3
+			Si_fixed = 4
+	else:
+		if (Ns >0):
+			Si_free = 2
+			Si_fixed = 3
+	if (Ns >0):
+		fid.write('%g 28.0855\n' % (Si_free))# Silicon atoms
+		fid.write('%g 28.0855\n' % (Si_fixed)) #Fixed Si atoms
+	fid.write('\nAtoms\n\n' % ())
+	for i in range(0,N):
+		if ((spiral_coords[i,1] < (y_extra/2)) or (spiral_coords[i,1] > (ly+(3*y_extra/2)))):# Fixed atoms on y_extra strips
+			if (h2o == 1):
+				fid.write('%d 2 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+			else:
+				fid.write('%d 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+		else:
+			if (h2o == 1):
+				fid.write('%d 1 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+			else:
+				fid.write('%d 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+	for j in range(0,Ns1):
+		fid.write('%d %g 0 %g %g %g\n' % (N+j+1, Si_fixed, s_coords[j,0], s_coords[j,1], s_coords[j,2]))
+	for k in range(Ns1,Ns):
+		fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
 
 	fid.close()
+
+
 
