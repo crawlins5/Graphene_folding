@@ -49,6 +49,9 @@ elif ((s_lx*s_ly*s_lz) == 0):
 h2o = float(param[11])
 if (h2o == 1):
 	print("Water will be present")	
+Hatoms = float(param[12])
+if (Hatoms == 1):
+    print("Edge H atoms included")
 fileID.close()
 filename = 'graphene.dat';
 writeresults = True;

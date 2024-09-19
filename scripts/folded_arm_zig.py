@@ -18,9 +18,11 @@ from folded_general import s_ly
 from folded_general import s_lz
 from folded_general import y_extra
 from folded_general import h2o
+from folded_general import Hatoms
 
 import math
 pi = math.pi
+CHbond=1.1
 
 ly_full = ly + 2.0*y_extra
 
@@ -37,19 +39,21 @@ else:
 
 if zigzagedge:
     # Size of the unit cell
-	A = 3*a;
-	B = math.sqrt(3)*a;
+    A = 3*a;
+    B = math.sqrt(3)*a;
 
     # Coordinates of the 4 atoms in the unit cell
-	base = np.array([[0.0, 0.0, 0.0], [a/2, B/2, 0.0], [A/2, B/2, 0.0], [2*a,0.0,0.0]])
+    base = np.array([[0.0, 0.0, 0.0], [a/2, B/2, 0.0], [A/2, B/2, 0.0], [2*a,0.0,0.0]])
+    ly_full = ny*math.sqrt(3)*a
 else:
-	A = math.sqrt(3)*a;
-	B = 3*a;
-	base = np.array([[0.0, 0.0, 0.0], [0, 2*a, 0.0], [A/2, a/2, 0.0], [A/2, B/2,0.0]])
-	nx = round(nx*math.sqrt(3))
-	ny = round(ny/math.sqrt(3))
-	ny_fold = round(ny_fold/math.sqrt(3))
-	ny_extra = round(ny_extra/math.sqrt(3))
+    A = math.sqrt(3)*a;
+    B = 3*a;
+    base = np.array([[0.0, 0.0, 0.0], [0, 2*a, 0.0], [A/2, a/2, 0.0], [A/2, B/2,0.0]])
+    nx = round(nx*math.sqrt(3))
+    ny = round(ny/math.sqrt(3))
+    ny_fold = round(ny_fold/math.sqrt(3))
+    ny_extra = round(ny_extra/math.sqrt(3))
+    ly_full = ny*3.0*a
 
 # Total number of atoms
 N = max(base.shape)*nx*ny;
@@ -106,6 +110,8 @@ for iy in range(ny_extra,ny_extra+ny_fold):
 for iy in range(ny_extra+ny_fold, ny):
 	spiral_coords[Nx*iy:Nx*(iy+1),:] = coords[:,:] +[0,iy*B,0];
 
+
+
 #Check for edge atoms with co-ordination number less than 2 and remove them
 
 #April 2024, generalised to account for tearing
@@ -115,28 +121,32 @@ for iy in range(ny_extra+ny_fold, ny):
 
 tmp_coords = spiral_coords
 CNoffset=0
+CN2count=0
 for atom in range(N):
-	if ((periodic == 0) and ((spiral_coords[atom,1] < a) or (spiral_coords[atom,1] > (ly-a)) )):
-		radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-		CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
-		CN = len(CN_atoms)
-		if (CN < 3): #Has a co-ordination number less than 2
-			print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
-			tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
-			CNoffset += 1
-			#remove atom
-
-	elif (ny_extra > 0):
-		if ( (abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
-			radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-			CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
-			CN = len(CN_atoms)
-			if (CN < 3): #Has a co-ordination number less than 2
-				print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
-				tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
-				CNoffset += 1
-				#remove atom
-
+    if ((periodic == 0) and ((spiral_coords[atom,1] < a) or (spiral_coords[atom,1] > (ly-a)) )):
+        radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
+        CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+        CN = len(CN_atoms)
+        if (CN < 3):
+            #Has a co-ordination number less than 2
+            print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
+            tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
+            CNoffset += 1
+            #remove atom
+        elif (CN == 3):
+            CN2count += 1
+    elif (ny_extra > 0):
+        if ((abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
+            radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2+(spiral_coords[atom,1] - spiral_coords[:,1])**2+(spiral_coords[atom,2] - spiral_coords[:,2])**2
+            CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+            CN = len(CN_atoms)
+            if (CN < 3): #Has a co-ordination number less than 2
+                print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
+                tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
+                CNoffset += 1
+	        #remove atom
+            elif (CN == 3):
+                CN2count+=1
 if (CNoffset > 0):
 	spiral_coords = tmp_coords
 print(CNoffset,'atoms removed')
@@ -145,37 +155,79 @@ print(CNoffset,'atoms removed')
 
 tmp_coords = spiral_coords
 CNoffset2=0
-for atom in range(N-CNoffset):
-	if ((periodic == 0) and ((spiral_coords[atom,1] < a) or (spiral_coords[atom,1] > (ly-a)) )):
-		radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-		CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
-		CN = len(CN_atoms)
-		if (CN < 3): #Has a co-ordination number less than 2
-			print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
-			tmp_coords = np.delete(tmp_coords, atom - CNoffset2,axis=0)
-			CNoffset2 += 1
-			#remove atom
 
-	elif (ny_extra > 0):
-		if ( (abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
-			radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-			CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
-			CN = len(CN_atoms)
-			if (CN < 3): #Has a co-ordination number less than 2
-				print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
-				tmp_coords = np.delete(tmp_coords, atom - CNoffset2,axis=0)
-				CNoffset2 += 1
+HatomCoords = np.zeros((2*CN2count,3))
+Hid = 0
+for atom in range(N-CNoffset):
+    if ((periodic == 0) and ((spiral_coords[atom,1] < a) or (spiral_coords[atom,1] > (ly-a)) )):
+        radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
+        CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+        CN = len(CN_atoms)
+        if (CN < 3):
+            #Has a co-ordination number less than 2
+            print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
+            tmp_coords = np.delete(tmp_coords, atom - CNoffset2,axis=0)
+            CNoffset2 += 1
+	    #remove atom
+        elif (CN == 3):
+            if (Hatoms == 1): #Add H atoms to CN2 edge carbon atoms
+                HatomCoords[Hid,0] = spiral_coords[atom,0]
+                if (spiral_coords[atom,1] <a): #Near bottom
+                    HatomCoords[Hid,1] = spiral_coords[atom,1] -CHbond
+                else:
+                    HatomCoords[Hid,1] = spiral_coords[atom,1] +CHbond
+                HatomCoords[Hid,2] = spiral_coords[atom,2]
+                Hid +=1
+    elif (ny_extra > 0):
+        if ((abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
+            radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
+            CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+            CN = len(CN_atoms)
+            if (CN < 3): #Has a co-ordination number less than 2
+                print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
+                tmp_coords = np.delete(tmp_coords, atom - CNoffset2,axis=0)
+                CNoffset2 += 1
 				#remove atom
 if (CNoffset2 >0):
 	spiral_coords = tmp_coords
 print(CNoffset2, 'atoms removed')
 N = N- CNoffset-CNoffset2
 
+#Add H atoms to short edge on top/bottom layer of fold
+NHatoms = 0
+if (Hatoms == 1):
+    #Bottom layer edge atoms
+    xmax = np.amax(spiral_coords[:,0])
+    xmaxID = np.where(spiral_coords[:,0] == xmax)[0]
+    #Top layer edge atoms
+    zmax = 2*r1
+    zmaxID = np.where((spiral_coords[:,2] == zmax))[0]
+    xmaxzmax = np.amax(spiral_coords[zmaxID,0])
+    zmaxedge = np.where((spiral_coords[:,2] == zmax) & (spiral_coords[:,0] == xmaxzmax))[0]
+    NHatoms = len(zmaxedge) + len(xmaxID)
+    HedgeID = np.concatenate((zmaxedge, xmaxID),axis=0)
+    Hatomxyz = np.zeros((NHatoms,3))
+    Hatomxyz[:,0] = spiral_coords[HedgeID,0] +CHbond
+    Hatomxyz[:,1] = spiral_coords[HedgeID,1]
+    Hatomxyz[:,2] = spiral_coords[HedgeID,2]
+
+
+if (Hid > 0):
+    NHatoms += Hid-1
+    Hatomxyz = np.concatenate((Hatomxyz,HatomCoords),axis=0)
 
 
 #Substrate info----------------------------------------------------------------------------------------------------------------------
 #Lattice parameter of Si cell
 l = 5.43 
+#If using a periodic system with Si, then the lattice parameter needs to be rescaled to make the alignments work. For a sufficiently wide box the changes should be minimal
+if (periodic == 1):
+    nSi = round(ly_full/l)
+    print("Old Si lattice parameter", l)
+    l = ly_full/nSi
+    print("New Si lattice parameter", l, "error percentage", (5.43-l)/5.43*100,"%")
+    s_ly = ly_full
+
 #Interatomic distance
 a_Si = l*math.sqrt(3)/4
 #Spacing between Si and C
@@ -239,57 +291,64 @@ else:
 
 
 if writeresults:
-	fid = open(filename,'w')
-	fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
-	fid.write('%d atoms\n\n' % (N+Ns))
-	if (Ns==0):
-		if (y_extra == 0):
-			fid.write('1 atom types\n\n' % ())
-		else:
-			fid.write('2 atom types\n\n' % ()) #Fixed atoms for tearing
-	else:
-		if (y_extra == 0):
-			fid.write('3 atom types\n\n' % ()) #Just adding substrate atoms in
-		else:
-			fid.write('4 atom types\n\n' % ())
+    fid = open(filename,'w')
+    fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
+    fid.write('%d atoms\n\n' % (N+Ns+NHatoms))
+    natomtypes = 1
+    if (Ns != 0):
+        natomtypes +=2
+    if (y_extra !=0):
+        natomtypes +=1
+    if ((NHatoms) !=0):
+        natomtypes +=1
+    fid.write('%d atom types\n\n' %(natomtypes))
 
-	fid.write('%g %g xlo xhi\n' % (x_offset, length))
-	if (periodic == 0):
-		fid.write('%g %g ylo yhi\n' % (width0, width))
-	else:
-		fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
-	fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
-	fid.write('Masses\n\n' % ())
-	fid.write('1 12.0107\n' % ())#free carbon atoms
-	if (y_extra > 0):
-		fid.write('2 12.0107\n' % ()) #fixed carbon atoms
-		if (Ns >0):
-			Si_free = 3
-			Si_fixed = 4
-	else:
-		if (Ns >0):
-			Si_free = 2
-			Si_fixed = 3
-	if (Ns >0):
-		fid.write('%g 28.0855\n' % (Si_free))# Silicon atoms
-		fid.write('%g 28.0855\n' % (Si_fixed)) #Fixed Si atoms
-	fid.write('\nAtoms\n\n' % ())
-	for i in range(0,N):
-		if ((spiral_coords[i,1] < (y_extra/2)) or (spiral_coords[i,1] > (ly+(3*y_extra/2)))):# Fixed atoms on y_extra strips
-			if (h2o == 1):
-				fid.write('%d 2 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-			else:
-				fid.write('%d 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-		else:
-			if (h2o == 1):
-				fid.write('%d 1 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-			else:
-				fid.write('%d 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-	for j in range(0,Ns1):
-		fid.write('%d %g 0 %g %g %g\n' % (N+j+1, Si_fixed, s_coords[j,0], s_coords[j,1], s_coords[j,2]))
-	for k in range(Ns1,Ns):
-		fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
-
-	fid.close()
+    fid.write('%g %g xlo xhi\n' % (x_offset, length))
+    if (periodic == 0):
+        fid.write('%g %g ylo yhi\n' % (width0, width))
+    else:
+        fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
+    fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
+    fid.write('Masses\n\n' % ())
+    fid.write('1 12.0107\n' % ())#free carbon atoms
+    if (y_extra > 0):
+        fid.write('2 12.0107\n' % ()) #fixed carbon atoms
+        if (Ns >0):
+            Si_free = 3
+            Si_fixed = 4
+            Hlabel = 5
+        else:
+            Hlabel = 3
+    else:
+        if (Ns >0):
+            Si_free = 2
+            Si_fixed = 3
+            Hlabel = 4
+        else:
+            Hlabel = 2
+    if (Ns >0):
+        fid.write('%g 28.0855\n' % (Si_free))# Silicon atoms
+        fid.write('%g 28.0855\n' % (Si_fixed)) #Fixed Si atoms
+    if ((NHatoms) >0):
+        fid.write('%g 1.008\n' % (Hlabel))
+    fid.write('\nAtoms\n\n' % ())
+    for i in range(0,N):
+        if ((spiral_coords[i,1] < (y_extra/2)) or (spiral_coords[i,1] > (ly+(3*y_extra/2)))):# Fixed atoms on y_extra strips
+            if (h2o == 1):
+                fid.write('%d 2 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+            else:
+                fid.write('%d 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+        else:
+            if (h2o == 1):
+                fid.write('%d 1 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+            else:
+                fid.write('%d 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+    for j in range(0,Ns1):
+        fid.write('%d %g 0 %g %g %g\n' % (N+j+1, Si_fixed, s_coords[j,0], s_coords[j,1], s_coords[j,2]))
+    for k in range(Ns1,Ns):
+        fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
+    for hh in range(0,NHatoms):
+        fid.write('%d %g 0 %g %g %g\n' % (N+Ns+hh+1, Hlabel, Hatomxyz[hh,0], Hatomxyz[hh,1], Hatomxyz[hh,2]))
+    fid.close()
 
 

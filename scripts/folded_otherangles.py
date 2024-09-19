@@ -17,9 +17,11 @@ from folded_general import s_ly
 from folded_general import s_lz
 from folded_general import y_extra
 from folded_general import h2o
+from folded_general import Hatoms
 
 import math
 
+CHbond = 1.1
 theta = theta*math.pi/180;
 pi = math.pi
 ly_full = ly + 2.0*y_extra
@@ -37,66 +39,67 @@ B = math.sqrt(3)*a;
 base = np.array([[0.0, 0.0, 0.0], [a/2, B/2, 0.0], [A/2, B/2, 0.0], [2*a,0.0,0.0]])
 
 if (periodic == 1):
-	width = B*ny*math.cos(theta); #Diagonal width
-	i = width*math.sin(theta)*2.0/A
+    width = B*ny*math.cos(theta); #Diagonal width
+    i = width*math.sin(theta)*2.0/A
 	
-	i_low = math.floor(i);
-	if ((i_low % 2) == 0):#Check if integer is odd or even
-		i_low_even = 1
-	else:
-		i_low_even = 0
+    i_low = math.floor(i);
+    if ((i_low % 2) == 0):#Check if integer is odd or even
+        i_low_even = 1
+    else:
+        i_low_even = 0
 	
-	width_low = i_low/(math.sin(theta))*A/2.0
-	j_low_raw = width_low*math.cos(theta)*2.0/B
-	j_low_up = math.ceil(j_low_raw)
-	j_low_down = math.floor(j_low_raw)
-	if (i_low_even == 1):
-		if ((j_low_up % 2) ==0):
-			j_low = j_low_up
-		else:
-			j_low = j_low_down
-	else:
-		if ((j_low_up % 2) == 0):
-			j_low = j_low_down
-		else:
-			j_low = j_low_up
-	theta_low = math.atan(i_low*math.sqrt(3)/j_low)
-	width_low2 = B*j_low/(2.0*math.cos(theta_low))
+    width_low = i_low/(math.sin(theta))*A/2.0
+    j_low_raw = width_low*math.cos(theta)*2.0/B
+    j_low_up = math.ceil(j_low_raw)
+    j_low_down = math.floor(j_low_raw)
+    if (i_low_even == 1):
+        if ((j_low_up % 2) ==0):
+            j_low = j_low_up
+        else:
+            j_low = j_low_down
+    else:
+        if ((j_low_up % 2) == 0):
+            j_low = j_low_down
+        else:
+            j_low = j_low_up
+    theta_low = math.atan(i_low*math.sqrt(3)/j_low)
+    width_low2 = B*j_low/(2.0*math.cos(theta_low))
 
-	i_high = math.ceil(i)
-	if (i_low_even == 1):
-		i_high_even = 0
-	else:
-		i_high_even = 1
+    i_high = math.ceil(i)
+    if (i_low_even == 1):
+        i_high_even = 0
+    else:
+        i_high_even = 1
 	
-	width_high = i_high/(math.sin(theta))*A/2.0
-	j_high_raw = width_high*math.cos(theta)*2.0/B
-	j_high_up = math.ceil(j_high_raw)
-	j_high_down = math.floor(j_high_raw)
-	if (i_high_even == 1):
-		if ((j_high_up % 2)==0):
-			j_high = j_high_up
-		else:
-			j_high = j_high_down
-	else:
-		if ((j_high_up % 2) == 0):
-			j_high = j_high_down
-		else:
-			j_high = j_high_up
+    width_high = i_high/(math.sin(theta))*A/2.0
+    j_high_raw = width_high*math.cos(theta)*2.0/B
+    j_high_up = math.ceil(j_high_raw)
+    j_high_down = math.floor(j_high_raw)
+    if (i_high_even == 1):
+        if ((j_high_up % 2)==0):
+            j_high = j_high_up
+        else:
+            j_high = j_high_down
+    else:
+        if ((j_high_up % 2) == 0):
+            j_high = j_high_down
+        else:
+            j_high = j_high_up
 
-	theta_high = math.atan(i_high*math.sqrt(3)/j_high)
-	width_high2 = B*j_high/(2.0*math.cos(theta_high))
-	dw_low = width - width_low2
-	dw_high = width_high2 - width
-	print("theta=",theta_low*180/math.pi, "width=", width_low)
-	print("theta=", theta_high*180/math.pi, "width=", width_high)
-	if (dw_high > dw_low):
-		theta = theta_low
-		ny = j_low/2.0
-	else:
-		theta = theta_high
-		ny = j_high/2.0
-	print("theta changed to", theta*180/math.pi, "and ny changed to", ny)
+    theta_high = math.atan(i_high*math.sqrt(3)/j_high)
+    width_high2 = B*j_high/(2.0*math.cos(theta_high))
+    dw_low = width - width_low2
+    dw_high = width_high2 - width
+    print("theta=",theta_low*180/math.pi, "width=", width_low)
+    print("theta=", theta_high*180/math.pi, "width=", width_high)
+    if (dw_high > dw_low):
+        theta = theta_low
+        ny = j_low/2.0
+    else:
+        theta = theta_high
+        ny = j_high/2.0
+    print("theta changed to", theta*180/math.pi, "and ny changed to", ny)
+    ly_full = ny*B
 
 #End of periodic, may need to consider resizing plan below before continuing
 		
@@ -152,29 +155,38 @@ x_rot = rot_coords[:,0]
 y_rot = rot_coords[:,1]
 #print(x_rot,y_rot)
 if (periodic == 0):
-	edge_atom = np.where((abs(x_rot-max_x) < a) | (abs(x_rot-min_x) < a) | (abs(y_rot-max_y) < a) | (abs(y_rot-min_y) < a))[0]
+    edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
 else:
-	edge_atom = np.where((abs(x_rot-max_x) < a) | (abs(x_rot-min_x) < a) )[0]
+    edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((abs(y_rot-max_y) > a) &  (abs(y_rot-min_y) > a) ))[0]
+
 
 j=0
 new_rot = rot_coords
 print(len(rot_coords),len(edge_atom))
+CN2count = 0
 for i, ed in enumerate(edge_atom):
-	dx = rot_coords[:,0] - rot_coords[ed,0]
-	dy = rot_coords[:,1] - rot_coords[ed,1]
+    dx = rot_coords[:,0] - rot_coords[ed,0]
+    dy = rot_coords[:,1] - rot_coords[ed,1]
 
-	radius2 = dx*dx+dy*dy
-	CN_check = np.where(radius2 < 1.1*a*a)[0]
-	CN = len(CN_check)
-	#print(i,ed,CN)
-	#Have to check CN=1 and 2 since it the atom is checked against itself
-	if ((CN == 1) or (CN == 2)):
-		print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
-		new_rot = np.delete(new_rot, ed-j,axis=0)
-		j+=1 
+    radius2 = dx*dx+dy*dy
+    CN_check = np.where(radius2 < 1.1*a*a)[0]
+    CN = len(CN_check)
+    #print(i,ed,CN)
+    #Have to check CN=1 and 2 since it the atom is checked against itself
+    if ((CN == 1) or (CN == 2)):
+        print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
+        new_rot = np.delete(new_rot, ed-j,axis=0)
+        j+=1
+    elif (CN == 3):
+        CN2count += 1
+
 if (j > 0):
-	rot_coords = new_rot
+    rot_coords = new_rot
 print(j,'atoms removed')
+
+HatomID = np.zeros(CN2count,dtype=int)
+NHatoms = 0
+Hid = 0
 #Second edge atoms check 
 max_x = np.amax(rot_coords[:,0])
 min_x = np.amin(rot_coords[:,0])
@@ -185,28 +197,38 @@ x_rot = rot_coords[:,0]
 y_rot = rot_coords[:,1]
 #print(x_rot,y_rot)
 if (periodic == 0):
-	edge_atom = np.where((abs(x_rot-max_x) < a) | (abs(x_rot-min_x) < a) | (abs(y_rot-max_y) < a) | (abs(y_rot-min_y) < a))[0]
+    edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
 else:
-	edge_atom = np.where((abs(x_rot-max_x) < a) | (abs(x_rot-min_x) < a) )[0]
+    edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((abs(y_rot-max_y) > a) &  (abs(y_rot-min_y) > a) ))[0]
+
 
 jj=0
 new_rot = rot_coords
 print(len(rot_coords),len(edge_atom))
 for i, ed in enumerate(edge_atom):
-	dx = rot_coords[:,0] - rot_coords[ed,0]
-	dy = rot_coords[:,1] - rot_coords[ed,1]
+    dx = rot_coords[:,0] - rot_coords[ed,0]
+    dy = rot_coords[:,1] - rot_coords[ed,1]
 
-	radius2 = dx*dx+dy*dy
-	CN_check = np.where(radius2 < 1.1*a*a)[0]
-	CN = len(CN_check)
+    radius2 = dx*dx+dy*dy
+    CN_check = np.where(radius2 < 1.1*a*a)[0]
+    CN = len(CN_check)
 	#print(i,ed,CN)
 	#Have to check CN=1 and 2 since it the atom is checked against itself
-	if ((CN == 1) or (CN == 2)):
-		print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
-		new_rot = np.delete(new_rot, ed-jj,axis=0)
-		jj+=1 
+    if ((CN == 1) or (CN == 2)):
+        print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
+        new_rot = np.delete(new_rot, ed-jj,axis=0)
+        jj+=1 
+    elif ((CN == 3) and (Hatoms == 1)):
+        #Label CN2 carbon atom to have an additional H atoms
+        if (NHatoms >= CN2count):
+            HatomID = np.append(HatomID, ed-jj)
+        else:
+            HatomID[Hid] = ed-jj
+        Hid += 1
+        NHatoms +=1
+
 if (jj > 0):
-	rot_coords = new_rot
+    rot_coords = new_rot
 print(jj,'atoms removed')
 
 
@@ -271,14 +293,41 @@ if (y_extra != 0): # remove edge atoms at tears
 N=N-CNoffset
 
 
+if (Hatoms == 1):
+    Hatomxyz = np.zeros((NHatoms,3))
+    Hatomxyz[:,0] = np.where(abs(spiral_coords[HatomID,0]-max_x) < 3*a, spiral_coords[HatomID,0]+CHbond, spiral_coords[HatomID,0]) #3b
+    Hatomxyz[:,0] = np.where((abs(rot_coords[HatomID,0]-min_x) < 3*a) & (spiral_coords[HatomID,2] == 2*r1), spiral_coords[HatomID,0]+CHbond, Hatomxyz[:,0]) #3a
+    Hatomxyz[:,0] = np.where((abs(spiral_coords[HatomID,0]-min_x) < 3*a), spiral_coords[HatomID,0]-CHbond, Hatomxyz[:,0]) #4
+    if (periodic == 0):
+        Hatomxyz[:,1] = np.where(abs(spiral_coords[HatomID,1]-max_y) < 3*a, spiral_coords[HatomID,1]+CHbond, spiral_coords[HatomID,1]) #2
+        Hatomxyz[:,1] = np.where(abs(spiral_coords[HatomID,1]-min_y) < 3*a, spiral_coords[HatomID,1]-CHbond, Hatomxyz[:,1]) #1
+    else:
+        Hatomxyz[:,1] = spiral_coords[HatomID,1]
 
+    Hatomxyz[:,2] = spiral_coords[HatomID,2]
 
+#Split into 4 categories:
+#1) Atoms along long edge at the y=0 line (-CHbond to y co-ord)
+#2) Atoms along long edge at the y=ly line (+CHbond to y co-ord)
+#3) Atoms along the short edges (both top 3a and bottom 3b fold) (+CHbond to x co-ord)
+#4) If yextra !=0 , the 2 short edges from the flat part of the sheet (-CHbond to x co-ord)
+#For periodic set-ups, only #3 and #4 are in the lists
+#We currently don't add H atoms along the lines of tearing.
 
 
 #Substrate info----------------------------------------------------------------------------------------------------------------------
 #Lattice parameter of Si cell
 l = 5.43 
 #Interatomic distance
+#If using a periodic system with Si, then the lattice parameter needs to be rescaled to make the alignments work. For a sufficiently wide box the changes should be minimal
+if (periodic == 1):
+    nSi = round(ly_full/l)
+    print("Old Si lattice parameter", l)
+    l = ly_full/nSi
+    print("New Si lattice parameter", l, "error percentage", (5.43-l)/5.43*100,"%")
+    s_ly = ly_full
+
+
 a_Si = l*math.sqrt(3)/4
 #Spacing between Si and C
 CSi = 2.0 #Approximately the graphene interlayer spacing
@@ -337,63 +386,69 @@ if ((s_ly > ly) and (Ns !=0)):
 	width0 = (ly_full-s_ly*scale)/2
 	width = (ly_full+s_ly*scale)/2
 else:
-	width0 = -100.0(scale-1.0)
+	width0 = -100.0*(scale-1.0)
 	width = ly_full*scale
 
 
 if writeresults:
-	fid = open(filename,'w')
-	fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
-	fid.write('%d atoms\n\n' % (N+Ns))
-	if (Ns==0):
-		if (y_extra == 0):
-			fid.write('1 atom types\n\n' % ())
-		else:
-			fid.write('2 atom types\n\n' % ()) #Fixed atoms for tearing
-	else:
-		if (y_extra == 0):
-			fid.write('3 atom types\n\n' % ()) #Just adding substrate atoms in
-		else:
-			fid.write('4 atom types\n\n' % ())
+    fid = open(filename,'w')
+    fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
+    fid.write('%d atoms\n\n' % (N+Ns+NHatoms))
+    natomtypes = 1
+    if (Ns != 0):
+        natomtypes +=2
+    if (y_extra !=0):
+        natomtypes +=1
+    if ((NHatoms) !=0):
+        natomtypes +=1
+    fid.write('%d atom types\n\n' %(natomtypes))
 
-	fid.write('%g %g xlo xhi\n' % (x_offset, length))
-	if (periodic == 0):
-		fid.write('%g %g ylo yhi\n' % (width0, width))
-	else:
-		fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
-	fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
-	fid.write('Masses\n\n' % ())
-	fid.write('1 12.0107\n' % ())#free carbon atoms
-	if (y_extra > 0):
-		fid.write('2 12.0107\n' % ()) #fixed carbon atoms
-		if (Ns >0):
-			Si_free = 3
-			Si_fixed = 4
-	else:
-		if (Ns >0):
-			Si_free = 2
-			Si_fixed = 3
-	if (Ns >0):
-		fid.write('%g 28.0855\n' % (Si_free))# Silicon atoms
-		fid.write('%g 28.0855\n' % (Si_fixed)) #Fixed Si atoms
-	fid.write('\nAtoms\n\n' % ())
-	for i in range(0,N):
-		if ((spiral_coords[i,1] < (y_extra/2)) or (spiral_coords[i,1] > (ly+(3*y_extra/2)))):# Fixed atoms on y_extra strips
-			if (h2o == 1):
-				fid.write('%d 2 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-			else:
-				fid.write('%d 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-		else:
-			if (h2o == 1):
-				fid.write('%d 1 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-			else:
-				fid.write('%d 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
-	for j in range(0,Ns1):
-		fid.write('%d %g 0 %g %g %g\n' % (N+j+1, Si_fixed, s_coords[j,0], s_coords[j,1], s_coords[j,2]))
-	for k in range(Ns1,Ns):
-		fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
-
-	fid.close()
-
+    fid.write('%g %g xlo xhi\n' % (x_offset, length))
+    if (periodic == 0):
+        fid.write('%g %g ylo yhi\n' % (width0, width))
+    else:
+        fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
+    fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
+    fid.write('Masses\n\n' % ())
+    fid.write('1 12.0107\n' % ())#free carbon atoms
+    if (y_extra > 0):
+        fid.write('2 12.0107\n' % ()) #fixed carbon atoms
+        if (Ns >0):
+            Si_free = 3
+            Si_fixed = 4
+            Hlabel = 5
+        else:
+            Hlabel = 3
+    else:
+        if (Ns >0):
+            Si_free = 2
+            Si_fixed = 3
+            Hlabel = 4
+        else:
+            Hlabel = 2
+    if (Ns >0):
+        fid.write('%g 28.0855\n' % (Si_free))# Silicon atoms
+        fid.write('%g 28.0855\n' % (Si_fixed)) #Fixed Si atoms
+    if ((NHatoms) >0):
+        fid.write('%g 1.008\n' % (Hlabel))
+    fid.write('\nAtoms\n\n' % ())
+    for i in range(0,N):
+        if ((spiral_coords[i,1] < (y_extra/2)) or (spiral_coords[i,1] > (ly+(3*y_extra/2)))):# Fixed atoms on y_extra strips
+            if (h2o == 1):
+                fid.write('%d 2 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+            else:
+                fid.write('%d 2 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+        else:
+            if (h2o == 1):
+                fid.write('%d 1 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+            else:
+                fid.write('%d 1 0 %g %g %g\n' % (i+1, spiral_coords[i,0], spiral_coords[i,1], spiral_coords[i,2]))
+    for j in range(0,Ns1):
+        fid.write('%d %g 0 %g %g %g\n' % (N+j+1, Si_fixed, s_coords[j,0], s_coords[j,1], s_coords[j,2]))
+    for k in range(Ns1,Ns):
+        fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
+    for hh in range(0,NHatoms):
+        fid.write('%d %g 0 %g %g %g\n' % (N+Ns+hh+1, Hlabel, Hatomxyz[hh,0], Hatomxyz[hh,1], Hatomxyz[hh,2]))
+    fid.close()
 
 
