@@ -1,4 +1,4 @@
-#Interatomic length between atoms, set to 1.4 Angstroms for graphene
+#Angle of the fold, typically 180 for a complete fold.
 #Length of sheet in the x direction (Angstroms) ,lx
 #Length of sheet in the y direction (Angstroms) ,ly
 #Radius of curvature of the fold (Angstroms) ,r1
