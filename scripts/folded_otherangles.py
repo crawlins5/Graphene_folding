@@ -272,8 +272,8 @@ for i in range(0,N):
 		else:
 			dphi = math.acos(1.0 - dx*dx/(2.0*r1*r1))
 			phi = phi+dphi
-		spiral_coords[i,0] = r1*math.cos(phi+pi/2.0) + L
-		spiral_coords[i,2] = r1*math.sin(phi+pi/2.0) + r1
+		spiral_coords[i,0] = L - r1*math.sin(phi+pi-ftheta) 
+		spiral_coords[i,2] = r1 + r1*math.cos(phi+pi-ftheta) 
 
 spiral_coords[:,1] = rot_coords[:,1]
 CNoffset = 0
