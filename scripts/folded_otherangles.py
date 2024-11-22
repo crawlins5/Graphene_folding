@@ -247,7 +247,7 @@ for i in range(0,N):
 	elif (rot_coords[i,0] < r2): #atom is in the top layer
 		#spiral_coords[i,0] = r2 + L - rot_coords[i,0]
 		#spiral_coords[i,2] = 2.0*r1
-		spiral_coords[i,0] = x0 - rot_coords[i,0]*math.cos(ftheta)
+		spiral_coords[i,0] = x0 + rot_coords[i,0]*math.cos(ftheta)
 		spiral_coords[i,2] = z0 - rot_coords[i,2]*math.sin(ftheta)
 	else:
 		dx = abs(rot_coords[i,0]-rot_coords[i-1,0])
