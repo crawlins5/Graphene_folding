@@ -4,7 +4,7 @@
 fileID = open("param_g",'r');
 param = fileID.readlines()
 ftheta = float(param[0])# Fold angle
-if (a <= 0):
+if (ftheta <= 0):
 	print("Fold angle must be greater than 0")
 	exit()
 lx = float(param[1]) ;    # Length of sheet in the x direction
