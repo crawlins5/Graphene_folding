@@ -75,7 +75,7 @@ for ix in range(0,nx):
 		if (coords[id,0] < r2): #atom is in the top layer
 			#spiralx_coords[id,0] = r2 + L - coords[id,0]
 			#spiralx_coords[id,2] = 2.0*r1
-			spiralx_coords[id,0] = x0 - coords[id,0]*math.cos(ftheta*pi/180)
+			spiralx_coords[id,0] = x0 + coords[id,0]*math.cos(ftheta*pi/180)
 			spiralx_coords[id,2] = z0 - coords[id,2]*math.sin(ftheta*pi/180)
 		elif (coords[id,0] >= L): #atom is on the bottom layer
 			spiralx_coords[id,0] = coords[id,0]
