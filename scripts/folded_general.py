@@ -3,9 +3,9 @@
 # INPUT PARAMETERS:
 fileID = open("param_g",'r');
 param = fileID.readlines()
-a = float(param[0])# interatomic distance
+ftheta = float(param[0])# Fold angle
 if (a <= 0):
-	print("Interatomic distance between carbon atoms must be greater than zero")
+	print("Fold angle must be greater than 0")
 	exit()
 lx = float(param[1]) ;    # Length of sheet in the x direction
 ly = float(param[2]);     # Length of sheet in the y direction
