@@ -65,7 +65,7 @@ coords = np.zeros((Nx,3));
 spiralx_coords = np.zeros((Nx,3));
 phi = 0
 L = r2 + (ftheta*pi/180)*r1
-x0 = L+r2*(1-math.cos(ftheta*pi/180))
+x0 = L-r2*math.cos(ftheta*pi/180)
 z0 = r1*(1-math.cos(ftheta*pi/180))+r2*math.sin(ftheta*pi/180)
 id = -1;
 for ix in range(0,nx):
