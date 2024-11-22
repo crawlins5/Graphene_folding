@@ -238,7 +238,7 @@ N =N-j-jj
 #L = r2 +pi*r1
 L = r2 +ftheta*r1
 spiral_coords = np.zeros((N,3));
-x0 = L+r2*(1-math.cos(ftheta))
+x0 = L-r2*math.cos(ftheta)
 z0 = r1*(1-math.cos(ftheta))+r2*math.sin(ftheta)
 for i in range(0,N):
 	if ((rot_coords[i,0] >= L) or (rot_coords[i,1] < y_extra) or (rot_coords[i,1] > (y_extra+ly))): #atom is on the bottom layer or part of the y_extra unfolded segments for tearing
