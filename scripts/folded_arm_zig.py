@@ -313,7 +313,7 @@ if writeresults:
         fid.write('%g %g ylo yhi\n' % (width0, width))
     else:
         fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
-    fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, 4*r1+1.0))
+    fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, z0+1.0))
     fid.write('Masses\n\n' % ())
     fid.write('1 12.0107\n' % ())#free carbon atoms
     if (y_extra > 0):
