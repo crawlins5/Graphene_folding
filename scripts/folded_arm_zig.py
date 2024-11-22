@@ -6,7 +6,7 @@ import numpy as np
 from folded_general import theta
 from folded_general import lx
 from folded_general import ly
-from folded_general import a
+from folded_general import ftheta
 from folded_general import r1
 from folded_general import r2
 from folded_general import filename
@@ -21,6 +21,7 @@ from folded_general import h2o
 from folded_general import Hatoms
 
 import math
+a=1.4
 pi = math.pi
 CHbond=1.1
 
@@ -63,15 +64,19 @@ Nx = max(base.shape)*nx;
 coords = np.zeros((Nx,3));
 spiralx_coords = np.zeros((Nx,3));
 phi = 0
-L = r2 + pi*r1
+L = r2 + (ftheta*pi/180)*r1
+x0 = L+r2*(1-math.cos(ftheta*pi/180))
+z0 = r1*(1-math.cos(ftheta*pi/180))+r2*math.sin(ftheta*pi/180)
 id = -1;
 for ix in range(0,nx):
 	for iatom in range(0,max(base.shape)):
 		id = id + 1;
 		coords[id,:] = base[iatom,:]+[ix*A,0,0];
 		if (coords[id,0] < r2): #atom is in the top layer
-			spiralx_coords[id,0] = r2 + L - coords[id,0]
-			spiralx_coords[id,2] = 2.0*r1
+			#spiralx_coords[id,0] = r2 + L - coords[id,0]
+			#spiralx_coords[id,2] = 2.0*r1
+			spiralx_coords[id,0] = x0 - coords[id,0]*math.cos(ftheta*pi/180)
+			spiralx_coords[id,2] = z0 - coords[id,2]*math.sin(ftheta*pi/180)
 		elif (coords[id,0] >= L): #atom is on the bottom layer
 			spiralx_coords[id,0] = coords[id,0]
 			spiralx_coords[id,2] = coords[id,2]
