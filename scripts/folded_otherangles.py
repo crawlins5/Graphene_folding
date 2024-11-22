@@ -5,7 +5,7 @@ import numpy as np
 from folded_general import theta
 from folded_general import lx
 from folded_general import ly
-from folded_general import a
+from folded_general import ftheta
 from folded_general import r1
 from folded_general import r2
 from folded_general import filename
@@ -20,10 +20,11 @@ from folded_general import h2o
 from folded_general import Hatoms
 
 import math
-
+a=1.4
 CHbond = 1.1
 theta = theta*math.pi/180;
 pi = math.pi
+ftheta = ftheta*pi/180
 ly_full = ly + 2.0*y_extra
 
 nx = round(lx/(3*a));
@@ -234,17 +235,20 @@ print(jj,'atoms removed')
 
 #print(len(rot_coords))
 N =N-j-jj
-L = r2 +pi*r1
+#L = r2 +pi*r1
+L = r2 +ftheta*r1
 spiral_coords = np.zeros((N,3));
-
+x0 = L+r2*(1-math.cos(ftheta))
+z0 = r1*(1-math.cos(ftheta))+r2*math.sin(ftheta)
 for i in range(0,N):
 	if ((rot_coords[i,0] >= L) or (rot_coords[i,1] < y_extra) or (rot_coords[i,1] > (y_extra+ly))): #atom is on the bottom layer or part of the y_extra unfolded segments for tearing
 		spiral_coords[i,0] = rot_coords[i,0]
 		spiral_coords[i,2] = rot_coords[i,2]
 	elif (rot_coords[i,0] < r2): #atom is in the top layer
-		spiral_coords[i,0] = r2 + L - rot_coords[i,0]
-		spiral_coords[i,2] = 2.0*r1
-
+		#spiral_coords[i,0] = r2 + L - rot_coords[i,0]
+		#spiral_coords[i,2] = 2.0*r1
+		spiral_coords[i,0] = x0 - rot_coords[i,0]*math.cos(ftheta)
+		spiral_coords[i,2] = z0 - rot_coords[i,2]*math.sin(ftheta)
 	else:
 		dx = abs(rot_coords[i,0]-rot_coords[i-1,0])
 		if (rot_coords[i-1,0] < r2):
