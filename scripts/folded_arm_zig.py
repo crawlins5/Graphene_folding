@@ -99,8 +99,8 @@ for ix in range(0,nx):
 			else:
 				dphi = math.acos(1.0 - dx*dx/(2.0*r1*r1))
 				phi = phi+dphi
-			spiralx_coords[id,0] = r1*math.cos(phi+pi/2.0) + L
-			spiralx_coords[id,2] = r1*math.sin(phi+pi/2.0) + r1
+			spiralx_coords[id,0] = L-r1*math.sin(phi+pi-ftheta*pi/180)
+			spiralx_coords[id,2] = r1 + r1*math.cos(phi+pi-ftheta*pi/180) 
 
 spiralx_coords[:,1] = coords[:,1];
 
