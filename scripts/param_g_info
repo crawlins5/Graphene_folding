@@ -10,3 +10,4 @@
 #y dimension of Si substrate s_ly
 #z dimenston of Si substrate s_lz
 #Flag for presence of water, if 0 there will be no water
+#Flag for addition of Hydrogen atoms around the edge

@@ -55,6 +55,8 @@ else:
     ny_fold = round(ny_fold/math.sqrt(3))
     ny_extra = round(ny_extra/math.sqrt(3))
     ly_full = ny*3.0*a
+    ly = ny_fold*3.0*a
+    print(ly,ly_full)
 
 # Total number of atoms
 N = max(base.shape)*nx*ny;
@@ -164,7 +166,7 @@ CNoffset2=0
 HatomCoords = np.zeros((2*CN2count,3))
 Hid = 0
 for atom in range(N-CNoffset):
-    if ((periodic == 0) and ((spiral_coords[atom,1] < a) or (spiral_coords[atom,1] > (ly-a)) )):
+    if ((periodic == 0) and ((spiral_coords[atom,1] < a*1.1) or (spiral_coords[atom,1] > (ly-a*1.1)) )):
         radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
         CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
         CN = len(CN_atoms)
@@ -206,9 +208,10 @@ if (Hatoms == 1):
     xmaxID = np.where(spiral_coords[:,0] == xmax)[0]
     #Top layer edge atoms
     zmax = 2*r1
-    zmaxID = np.where((spiral_coords[:,2] == zmax))[0]
+    zmaxID = np.where(abs(spiral_coords[:,2]- zmax) < 0.01)[0]
     xmaxzmax = np.amax(spiral_coords[zmaxID,0])
-    zmaxedge = np.where((spiral_coords[:,2] == zmax) & (spiral_coords[:,0] == xmaxzmax))[0]
+    print(xmaxzmax,zmax)
+    zmaxedge = np.where((abs(spiral_coords[:,2] -zmax)< 0.01) & (spiral_coords[:,0] == xmaxzmax))[0]
     NHatoms = len(zmaxedge) + len(xmaxID)
     HedgeID = np.concatenate((zmaxedge, xmaxID),axis=0)
     Hatomxyz = np.zeros((NHatoms,3))

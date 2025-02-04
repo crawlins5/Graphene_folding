@@ -91,16 +91,19 @@ if (periodic == 1):
     width_high2 = B*j_high/(2.0*math.cos(theta_high))
     dw_low = width - width_low2
     dw_high = width_high2 - width
-    print("theta=",theta_low*180/math.pi, "width=", width_low)
-    print("theta=", theta_high*180/math.pi, "width=", width_high)
+    print("theta=",theta_low*180/math.pi, "width=", width_low, width_low2)
+    print("theta=", theta_high*180/math.pi, "width=", width_high, width_high2)
     if (dw_high > dw_low):
         theta = theta_low
+        ly_full = width_low2
         ny = j_low/2.0
     else:
         theta = theta_high
+        ly_full = width_high2
         ny = j_high/2.0
-    print("theta changed to", theta*180/math.pi, "and ny changed to", ny)
-    ly_full = ny*B
+    print("theta changed to", theta*180/math.pi, "and width changed to", ly_full)
+    ly = ly_full - 2.0*y_extra
+    #ly_full = ny*B
 
 #End of periodic, may need to consider resizing plan below before continuing
 		
@@ -127,8 +130,8 @@ for iy in range(0,ny2):
 			id += 1
 #rotate graphene
 rot_coords = np.zeros((N,3))
-rot_coords[:,0] = coords[:,0]*math.cos(theta)+(coords[:,1]-B*ny)*math.sin(theta)
-rot_coords[:,1] = -coords[:,0]*math.sin(theta)+(coords[:,1]-B*ny)*math.cos(theta)+B*ny
+rot_coords[:,0] = coords[:,0]*math.cos(theta)+(coords[:,1]-ly_full)*math.sin(theta)
+rot_coords[:,1] = -coords[:,0]*math.sin(theta)+(coords[:,1]-ly_full)*math.cos(theta)+ly_full
 
 #Remove atoms which don't fit within the original dimensions
 #Reset array size
@@ -296,15 +299,27 @@ if (y_extra != 0): # remove edge atoms at tears
 
 N=N-CNoffset
 
-
+Htol= 2.0*a
 if (Hatoms == 1):
     Hatomxyz = np.zeros((NHatoms,3))
-    Hatomxyz[:,0] = np.where(abs(spiral_coords[HatomID,0]-max_x) < 3*a, spiral_coords[HatomID,0]+CHbond, spiral_coords[HatomID,0]) #3b
-    Hatomxyz[:,0] = np.where((abs(rot_coords[HatomID,0]-min_x) < 3*a) & (spiral_coords[HatomID,2] == 2*r1), spiral_coords[HatomID,0]+CHbond, Hatomxyz[:,0]) #3a
-    Hatomxyz[:,0] = np.where((abs(spiral_coords[HatomID,0]-min_x) < 3*a), spiral_coords[HatomID,0]-CHbond, Hatomxyz[:,0]) #4
+    Hatomxyz = spiral_coords[HatomID,:]
+    HatomxyzID3b = np.where((abs(spiral_coords[HatomID,0]-max_x) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) < (max_y-max_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])> (min_y+max_x)) )[0]
+
+    HatomxyzID3a = np.where((abs(rot_coords[HatomID,0]-min_x) < Htol) & ((spiral_coords[HatomID,2]- 2*r1) < 0.01)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) > (min_y-min_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])< (max_y+min_x)))[0]
+
+    HatomxyzID4 = np.where((abs(spiral_coords[HatomID,0]-min_x) < Htol))[0]
+
+    HatomxyzID2 = np.where((abs(spiral_coords[HatomID,1]-max_y) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) > (max_y-max_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])> (max_y+min_x)))[0]
+
+    HatomxyzID1 = np.where((abs(spiral_coords[HatomID,1]-min_y) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) < (min_y-min_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])< (min_y+max_x)))[0]
+    
+    Hatomxyz[HatomxyzID3b,0] = spiral_coords[HatomID[HatomxyzID3b],0] +CHbond
+    Hatomxyz[HatomxyzID3a,0] = spiral_coords[HatomID[HatomxyzID3a],0] +CHbond
+    Hatomxyz[HatomxyzID4,0] = spiral_coords[HatomID[HatomxyzID4],0] -CHbond
+
     if (periodic == 0):
-        Hatomxyz[:,1] = np.where(abs(spiral_coords[HatomID,1]-max_y) < 3*a, spiral_coords[HatomID,1]+CHbond, spiral_coords[HatomID,1]) #2
-        Hatomxyz[:,1] = np.where(abs(spiral_coords[HatomID,1]-min_y) < 3*a, spiral_coords[HatomID,1]-CHbond, Hatomxyz[:,1]) #1
+        Hatomxyz[HatomxyzID2,1] = spiral_coords[HatomID[HatomxyzID2],1] +CHbond
+        Hatomxyz[HatomxyzID1,1] = spiral_coords[HatomID[HatomxyzID1],1] -CHbond
     else:
         Hatomxyz[:,1] = spiral_coords[HatomID,1]
 
@@ -386,13 +401,12 @@ if ((s_lx > lx) and (Ns !=0)):
 	length = s_lx*1.1
 else:
 	length = 1.1*lx
-if ((s_ly > ly) and (Ns !=0)):
+if ((s_ly > ly_full) and (Ns !=0)):
 	width0 = (ly_full-s_ly*scale)/2
 	width = (ly_full+s_ly*scale)/2
 else:
 	width0 = -100.0*(scale-1.0)
 	width = ly_full*scale
-
 
 if writeresults:
     fid = open(filename,'w')
@@ -408,10 +422,7 @@ if writeresults:
     fid.write('%d atom types\n\n' %(natomtypes))
 
     fid.write('%g %g xlo xhi\n' % (x_offset, length))
-    if (periodic == 0):
-        fid.write('%g %g ylo yhi\n' % (width0, width))
-    else:
-        fid.write('%g %g ylo yhi\n' % (0.0, B*ny))
+    fid.write('%g %g ylo yhi\n' % (width0, width))
     fid.write('%g %g zlo zhi\n\n' % ((-s_lz-CSi)*1.1, z0+1.0))
     fid.write('Masses\n\n' % ())
     fid.write('1 12.0107\n' % ())#free carbon atoms
