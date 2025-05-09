@@ -58,7 +58,4 @@ writeresults = True;
 #showresults = True;
 
 
-if ((theta == 0)| (theta == 30)): #Zigzag or armchair arrangements
-	import folded_arm_zig
-else:
-	import folded_otherangles
+import folded_otherangles

@@ -1,5 +1,4 @@
-#Called by folded_graphene_general for theta not = 0 or 30
-#Updated to remove atoms on the edge with a CN of 1
+#Called by folded_graphene_general for all theta
 import math
 import numpy as np
 from folded_general import theta
@@ -22,9 +21,6 @@ from folded_general import Hatoms
 import math
 a=1.4
 CHbond = 1.1
-theta = theta*math.pi/180;
-pi = math.pi
-ftheta = ftheta*pi/180
 ly_full = ly + 2.0*y_extra
 
 nx = round(lx/(3*a));
@@ -38,9 +34,17 @@ B = math.sqrt(3)*a;
 
 # Coordinates of the 4 atoms in the unit cell
 base = np.array([[0.0, 0.0, 0.0], [a/2, B/2, 0.0], [A/2, B/2, 0.0], [2*a,0.0,0.0]])
+if ((theta==0) or (theta==30)):
+    ly_full = ny*B
 
-if (periodic == 1):
-    width = B*ny*math.cos(theta); #Diagonal width
+
+
+theta = theta*math.pi/180;
+pi = math.pi
+ftheta = ftheta*pi/180
+
+if ((periodic == 1) and (theta!=0.0)):
+    width = B*ny#*math.cos(theta); #Diagonal width
     i = width*math.sin(theta)*2.0/A
 	
     i_low = math.floor(i);
@@ -173,22 +177,21 @@ for i, ed in enumerate(edge_atom):
     dy = rot_coords[:,1] - rot_coords[ed,1]
 
     radius2 = dx*dx+dy*dy
-    CN_check = np.where(radius2 < 1.1*a*a)[0]
+    CN_check = np.where((radius2 < 1.1*a*a) & (radius2 > 0.1))[0]
     CN = len(CN_check)
     #print(i,ed,CN)
-    #Have to check CN=1 and 2 since it the atom is checked against itself
-    if ((CN == 1) or (CN == 2)):
+    if ((CN == 0) or (CN == 1)):
         print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
         new_rot = np.delete(new_rot, ed-j,axis=0)
         j+=1
-    elif (CN == 3):
+    elif (CN == 2):
         CN2count += 1
 
 if (j > 0):
     rot_coords = new_rot
 print(j,'atoms removed')
 
-HatomID = np.zeros(CN2count,dtype=int)
+HatomID = np.zeros((CN2count,3),dtype=int)
 NHatoms = 0
 Hid = 0
 #Second edge atoms check 
@@ -209,25 +212,27 @@ else:
 jj=0
 new_rot = rot_coords
 print(len(rot_coords),len(edge_atom))
+CNH = np.zeros(3,dtype=int)
 for i, ed in enumerate(edge_atom):
     dx = rot_coords[:,0] - rot_coords[ed,0]
     dy = rot_coords[:,1] - rot_coords[ed,1]
 
     radius2 = dx*dx+dy*dy
-    CN_check = np.where(radius2 < 1.1*a*a)[0]
+    CN_check = np.where((radius2 < 1.1*a*a) & (radius2 > 0.1))[0]
     CN = len(CN_check)
 	#print(i,ed,CN)
-	#Have to check CN=1 and 2 since it the atom is checked against itself
-    if ((CN == 1) or (CN == 2)):
+    if ((CN == 0) or (CN == 1)):
         print("removed atom at coords",CN,ed,  rot_coords[ed,0], rot_coords[ed,1])
         new_rot = np.delete(new_rot, ed-jj,axis=0)
         jj+=1 
-    elif ((CN == 3) and (Hatoms == 1)):
+    elif ((CN == 2) and (Hatoms == 1)):
         #Label CN2 carbon atom to have an additional H atoms
+        CNH[0] = ed
+        CNH[1:] = CN_check
         if (NHatoms >= CN2count):
-            HatomID = np.append(HatomID, ed-jj)
+            HatomID = np.append(HatomID, [CNH-jj],axis=0)
         else:
-            HatomID[Hid] = ed-jj
+            HatomID[Hid] = CNH-jj
         Hid += 1
         NHatoms +=1
 
@@ -285,9 +290,9 @@ if (y_extra != 0): # remove edge atoms at tears
 	for atom in range(N):
 		if ( (abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
 			radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-			CN_atoms = np.where(radius2 < (a*1.1)**2)[0]
+			CN_atoms = np.where((radius2 < (a*1.1)**2)& (radius2>0.1))[0]
 			CN = len(CN_atoms)
-			if (CN < 3): #Has a co-ordination number less than 2
+			if (CN < 2): #Has a co-ordination number less than 2
 				print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
 				tmp_coords = np.delete(tmp_coords, atom - CNoffset,axis=0)
 				CNoffset += 1
@@ -299,40 +304,40 @@ if (y_extra != 0): # remove edge atoms at tears
 
 N=N-CNoffset
 
-Htol= 2.0*a
 if (Hatoms == 1):
     Hatomxyz = np.zeros((NHatoms,3))
-    Hatomxyz = spiral_coords[HatomID,:]
-    HatomxyzID3b = np.where((abs(spiral_coords[HatomID,0]-max_x) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) < (max_y-max_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])> (min_y+max_x)) )[0]
+    for i, ed in enumerate(HatomID[:,0]):
+        atm1 = HatomID[i,1]
+        atm2 = HatomID[i,2]
+        atm3x = spiral_coords[ed,0]
+        atm3y = spiral_coords[ed,1]
+        atm3z = spiral_coords[ed,2]
 
-    HatomxyzID3a = np.where((abs(rot_coords[HatomID,0]-min_x) < Htol) & ((spiral_coords[HatomID,2]- 2*r1) < 0.01)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) > (min_y-min_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])< (max_y+min_x)))[0]
+        dx = spiral_coords[atm1,0] - spiral_coords[atm2,0]
+        dy = (spiral_coords[atm1,1] - spiral_coords[atm2,1])
+        dz = spiral_coords[atm1,2] - spiral_coords[atm2,2]
+        dxx = math.sqrt(dx*dx+dz*dz)
 
-    HatomxyzID4 = np.where((abs(spiral_coords[HatomID,0]-min_x) < Htol))[0]
+        yave = (spiral_coords[atm1,1] + spiral_coords[atm2,1])/2.0
+        if (atm3y >= yave):
+            dysign = 1.0
+        else:
+            dysign = -1.0
+        if (dy >= 0.0):
+            dysign1 = 1.0
+        else:
+            dysign1 = -1.0
+        if (dx >= 0.0):
+            dxsign = 1.0
+        else:
+            dxsign = -1.0
+        dxysign = dysign1/dxsign
 
-    HatomxyzID2 = np.where((abs(spiral_coords[HatomID,1]-max_y) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) > (max_y-max_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])> (max_y+min_x)))[0]
-
-    HatomxyzID1 = np.where((abs(spiral_coords[HatomID,1]-min_y) < Htol)& ((rot_coords[HatomID,1]-rot_coords[HatomID,0]) < (min_y-min_x))& ((rot_coords[HatomID,1] + rot_coords[HatomID,0])< (min_y+max_x)))[0]
-    
-    Hatomxyz[HatomxyzID3b,0] = spiral_coords[HatomID[HatomxyzID3b],0] +CHbond
-    Hatomxyz[HatomxyzID3a,0] = spiral_coords[HatomID[HatomxyzID3a],0] +CHbond
-    Hatomxyz[HatomxyzID4,0] = spiral_coords[HatomID[HatomxyzID4],0] -CHbond
-
-    if (periodic == 0):
-        Hatomxyz[HatomxyzID2,1] = spiral_coords[HatomID[HatomxyzID2],1] +CHbond
-        Hatomxyz[HatomxyzID1,1] = spiral_coords[HatomID[HatomxyzID1],1] -CHbond
-    else:
-        Hatomxyz[:,1] = spiral_coords[HatomID,1]
-
-    Hatomxyz[:,2] = spiral_coords[HatomID,2]
-
-#Split into 4 categories:
-#1) Atoms along long edge at the y=0 line (-CHbond to y co-ord)
-#2) Atoms along long edge at the y=ly line (+CHbond to y co-ord)
-#3) Atoms along the short edges (both top 3a and bottom 3b fold) (+CHbond to x co-ord)
-#4) If yextra !=0 , the 2 short edges from the flat part of the sheet (-CHbond to x co-ord)
-#For periodic set-ups, only #3 and #4 are in the lists
-#We currently don't add H atoms along the lines of tearing.
-
+        Hx = dy * CHbond/B*dysign1
+        Hy = dxx*CHbond/B
+        Hatomxyz[i,0] = atm3x+Hx*(-dysign*dxysign)
+        Hatomxyz[i,1] = atm3y+Hy*dysign
+        Hatomxyz[i,2] = atm3z
 
 #Substrate info----------------------------------------------------------------------------------------------------------------------
 #Lattice parameter of Si cell
