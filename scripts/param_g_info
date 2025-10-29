@@ -5,9 +5,11 @@
 #Length of sheet on top half of folded sheet (Angstroms) ,r2
 #Twist angle (Degrees), theta
 #Switch for periodic sheets in the y-direction, 0 for non-periodic and 1 for periodic. For theta other than 0 and 30, the sheet gets minor alterations to the width and angle to make sheet periodic.
+#periodic in the x-direction
 #Extra width for tearing simulations
 #x dimension of Si substrate s_lx
 #y dimension of Si substrate s_ly
 #z dimenston of Si substrate s_lz
 #Flag for presence of water, if 0 there will be no water
 #Flag for addition of Hydrogen atoms around the edge
+#number of layers of graphene (only 1 or 2)
