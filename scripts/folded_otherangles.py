@@ -172,15 +172,18 @@ if (N != 0):
     min_x = np.amin(new_coords[:Ncount,0])
     max_y = np.amax(new_coords[:Ncount,1])
     min_y = np.amin(new_coords[:Ncount,1])
-    #print(max_x,min_x,max_y, min_y)
+    print(max_x,min_x,max_y, min_y,max_y-B/2.0,max_y-B/2.1)
     x_rot = new_coords[:Ncount,0]
     y_rot = new_coords[:Ncount,1]
     #print(x_rot,y_rot)
     if (periodic_y == 0):
-        edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
+        if (periodic_x == 0):
+            edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
+        else:
+            edge_atom = np.where(((x_rot > (min_x+A/2.1)) & (x_rot < (max_x-A/2.1))) & ((abs(y_rot-max_y) < 3*a) |  (abs(y_rot-min_y) < 3*a) ))[0]
     else:
         if (periodic_x == 0):
-            edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((abs(y_rot-max_y) > a) &  (abs(y_rot-min_y) > a) ))[0]
+            edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((y_rot >(min_y+B/2.1)) & (y_rot < (max_y-B/2.1) )))[0]
         else:
             edge_atom = np.empty(0)
 
@@ -220,10 +223,15 @@ if (N != 0):
     y_rot = new_coords[:Ncount,1]
     #print(x_rot,y_rot)
     if (periodic_y == 0):
-        edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
+        if (periodic_x == 0):
+            edge_atom = np.where((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a) | (abs(y_rot-max_y) < 3*a) | (abs(y_rot-min_y) < 3*a))[0]
+        else:
+            edge_atom = np.where(((x_rot > (min_x+A/2.1)) & (x_rot < (max_x-A/2.1))) & ((abs(y_rot-max_y) < 3*a) |  (abs(y_rot-min_y) < 3*a) ))[0]
+
     else:
         if (periodic_x == 0):
-            edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((abs(y_rot-max_y) > a) &  (abs(y_rot-min_y) > a) ))[0]
+            edge_atom = np.where(((abs(x_rot-max_x) < 3*a) | (abs(x_rot-min_x) < 3*a)) & ((y_rot >(min_y+B/2.1)) & (y_rot < (max_y-B/2.1) )))[0]
+
 
 
     jj=0
@@ -245,7 +253,7 @@ if (N != 0):
             rmatomID[jj] = ed
             jj+=1
             #HatomID = np.where(HatomID >= ed, HatomID-1, HatomID)
-        elif ((CN == 2) and (Hatoms == 1)):
+        elif ((CN == 2) and (Hatoms == 1) and ((new_coords[ed,1] >= y_extra) and (new_coords[ed,1]<(ly+y_extra)))):
             #Label CN2 carbon atom to have an additional H atoms
             CNH[0] = ed
             CNH[1:] = CN_check
@@ -325,9 +333,9 @@ if (N != 0):
     if (y_extra != 0): # remove edge atoms at tears
             tmp_coords = spiral_coords
             for atom in range(N):
-                    if ( (abs(spiral_coords[atom,1] - y_extra) < a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < a)):
+                    if ( (abs(spiral_coords[atom,1] - y_extra) < 3*a) or (abs(spiral_coords[atom,1] - (ly+y_extra)) < 3*a)):
                             radius2 = (spiral_coords[atom,0] - spiral_coords[:,0])**2 + (spiral_coords[atom,1] - spiral_coords[:,1])**2+ (spiral_coords[atom,2] - spiral_coords[:,2])**2
-                            CN_atoms = np.where((radius2 < (a*1.1)**2)& (radius2>0.1))[0]
+                            CN_atoms = np.where((radius2 < (a*a*1.1))& (radius2>0.1))[0]
                             CN = len(CN_atoms)
                             if ((CN == 0) or (CN == 1)):
                                 print("removed atom at coords", CN, spiral_coords[atom,0],spiral_coords[atom,1], spiral_coords[atom,2])
@@ -338,17 +346,32 @@ if (N != 0):
                                 else:
                                     rmatomID[jj+CNoffset] = atom
                                 CNoffset +=1
-                            elif ((CN == 2) and (Hatoms == 1)):
+                            elif ((CN == 2) and (Hatoms == 1) and (spiral_coords[atom,2]>0.0)):
                             #Label CN2 carbon atom to have an additional H atoms
+                            #Only add to carbon atoms on the ribbon, not on the flat portion
                                 CNH[0] = atom
                                 CNH[1:] = CN_atoms
-                                HatomID = np.append(HatomID, [CNH],axis=0)
+                                if (NHatoms >= CN2count):
+                                    HatomID = np.append(HatomID, [CNH],axis=0)
+                                else:
+                                    HatomID[Hid] = CNH
+                                Hid +=1
                                 NHatoms +=1
 
                                     
             if (CNoffset > 0):
                     spiral_coords = tmp_coords
             print(CNoffset,'atoms removed')
+    Hoffset =0
+    if (CN2count > NHatoms):
+        HatomID = HatomID[:len(HatomID)-(CN2count-NHatoms)]
+    for HID in range(NHatoms):
+        #print(HID,HatomID[HID-Hoffset,0], rmatomID)
+        if (HatomID[HID-Hoffset,0] in rmatomID):
+            NHatoms -=1
+            HatomID = np.delete(HatomID, HID-Hoffset, axis=0)
+            Hoffset +=1
+            #print("delete")
 #Adjusts Hatom ID numbers for removed Carbon atoms
     for rmID in range(0,jj+CNoffset):
         HatomID = np.where(HatomID >= rmatomID[rmID], HatomID-1,HatomID)
@@ -356,7 +379,8 @@ if (N != 0):
     N=N-CNoffset
 
     if (Hatoms == 1):
-        Hatomxyz = np.zeros((NHatoms,3))
+        Hoffset = 0
+        Hatomxyz = np.zeros((NHatoms*layer_num,3))
         for i, ed in enumerate(HatomID[:,0]):
             atm1 = HatomID[i,1]
             atm2 = HatomID[i,2]
@@ -377,6 +401,13 @@ if (N != 0):
             Hatomxyz[i,0] = atm3x+Hx
             Hatomxyz[i,1] = atm3y+Hy
             Hatomxyz[i,2] = atm3z+Hz
+            if (layer_num == 2):
+                Hatomxyz[i+NHatoms,0] = Hatomxyz[i,0]
+                Hatomxyz[i+NHatoms,1] = ly_full - Hatomxyz[i,1]
+                Hatomxyz[i+NHatoms,2] = Hatomxyz[i,2]-2*r1
+
+            #print(i,ed, HatomID[i,:])
+            #print(xave,yave,zave, dx,dy,dz)
 
 #Substrate info----------------------------------------------------------------------------------------------------------------------
 #Lattice parameter of Si cell
@@ -401,6 +432,8 @@ a_Si = l*math.sqrt(3)/4
 #Spacing between Si and C
 CSi = 2.0 #Approximately the graphene interlayer spacing
 x_offset = -10
+if (periodic_x == 1):
+    x_offset = 0.0
 
 mx = round(s_lx/l);
 my = round(s_ly/l);
@@ -467,8 +500,8 @@ if writeresults:
     fid = open(filename,'w')
     fid2 = open(filename2, 'w')
     fid.write('graphene a=%g and Si a=%g \n' % (a,a_Si))
-    fid.write('%d atoms\n\n' % (N+Ns+NHatoms))
-    fid2.write('%d\n' % (N+Ns+NHatoms))
+    fid.write('%d atoms\n\n' % (N+Ns+NHatoms*layer_num))
+    fid2.write('%d\n' % (N+Ns+NHatoms*layer_num))
     fid2.write('Layers=%d \t length = %g \t width = %g \n' % (layer_num, length, (width-width0)))
     natomtypes = 0
     if (N != 0):
@@ -530,7 +563,7 @@ if writeresults:
     for k in range(Ns1,Ns):
         fid2.write('Si \t %g \t %g \t %g \n' % (s_coords[k,0], s_coords[k,1], s_coords[k,2]))
         fid.write('%d %g 0 %g %g %g\n' % (N+k+1, Si_free, s_coords[k,0], s_coords[k,1], s_coords[k,2]))
-    for hh in range(0,NHatoms):
+    for hh in range(0,NHatoms*layer_num):
         fid.write('%d %g 0 %g %g %g\n' % (N+Ns+hh+1, Hlabel, Hatomxyz[hh,0], Hatomxyz[hh,1], Hatomxyz[hh,2]))
         fid2.write('H \t  %g \t %g \t  %g\n' % (Hatomxyz[hh,0], Hatomxyz[hh,1], Hatomxyz[hh,2]))
 
